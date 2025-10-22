@@ -13,6 +13,8 @@ type Server struct {
 func New() *Server {
 	mux := http.NewServeMux()
 
+	mux.HandleFunc("/", handleHome)
+
 	srv := &http.Server{
 		Addr:         ":8080",
 		Handler:      mux,
@@ -30,4 +32,8 @@ func (server *Server) ListenAndServe() error {
 
 func (server *Server) Shutdown(ctx context.Context) error {
 	return server.httpSrv.Shutdown(ctx)
+}
+
+func handleHome(writer http.ResponseWriter, req *http.Request) {
+	http.ServeFile(writer, req, "index.html")
 }
