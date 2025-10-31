@@ -361,3 +361,67 @@ func Test_methodRestriction_DisallowedMethod_IncludesAllowHeader(t *testing.T) {
 		})
 	}
 }
+
+// Test_handlerMetrics_GetRequest_Returns200 verifies that GET request to /metrics returns 200 with metrics data
+func Test_handlerMetrics_GetRequest_Returns200(t *testing.T) {
+	cfg := &apiConfig{}
+	cfg.fileserverHits.Store(5)
+
+	// Create a wrapped handler with method restriction
+	wrappedHandler := methodRestriction("GET", cfg.handlerMetrics)
+
+	req := httptest.NewRequest(http.MethodGet, "/metrics", nil)
+	rec := httptest.NewRecorder()
+	wrappedHandler(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Errorf("Status code = %d, want %d", rec.Code, http.StatusOK)
+	}
+
+	expectedBody := "Hits: 5"
+	if rec.Body.String() != expectedBody {
+		t.Errorf("Response body = %q, want %q", rec.Body.String(), expectedBody)
+	}
+}
+
+// Test_handlerMetrics_PostRequest_Returns405 verifies that POST request to /metrics returns 405 with Allow header
+func Test_handlerMetrics_PostRequest_Returns405(t *testing.T) {
+	cfg := &apiConfig{}
+
+	// Create a wrapped handler with method restriction
+	wrappedHandler := methodRestriction("GET", cfg.handlerMetrics)
+
+	req := httptest.NewRequest(http.MethodPost, "/metrics", nil)
+	rec := httptest.NewRecorder()
+	wrappedHandler(rec, req)
+
+	if rec.Code != http.StatusMethodNotAllowed {
+		t.Errorf("Status code = %d, want %d", rec.Code, http.StatusMethodNotAllowed)
+	}
+
+	allowHeader := rec.Header().Get("Allow")
+	if allowHeader != "GET" {
+		t.Errorf("Allow header = %q, want %q", allowHeader, "GET")
+	}
+}
+
+// Test_handlerMetrics_PutRequest_Returns405 verifies that PUT request to /metrics returns 405 with Allow header
+func Test_handlerMetrics_PutRequest_Returns405(t *testing.T) {
+	cfg := &apiConfig{}
+
+	// Create a wrapped handler with method restriction
+	wrappedHandler := methodRestriction("GET", cfg.handlerMetrics)
+
+	req := httptest.NewRequest(http.MethodPut, "/metrics", nil)
+	rec := httptest.NewRecorder()
+	wrappedHandler(rec, req)
+
+	if rec.Code != http.StatusMethodNotAllowed {
+		t.Errorf("Status code = %d, want %d", rec.Code, http.StatusMethodNotAllowed)
+	}
+
+	allowHeader := rec.Header().Get("Allow")
+	if allowHeader != "GET" {
+		t.Errorf("Allow header = %q, want %q", allowHeader, "GET")
+	}
+}
