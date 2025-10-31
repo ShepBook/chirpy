@@ -64,7 +64,7 @@ func main() {
 
 	// Register metrics and reset handlers
 	mux := server.Mux()
-	mux.HandleFunc("/metrics", MethodRestriction("GET", cfg.handlerMetrics))
+	mux.HandleFunc("/api/metrics", MethodRestriction("GET", cfg.handlerMetrics))
 	mux.HandleFunc("/reset", MethodRestriction("POST", cfg.handlerReset))
 
 	go func() {

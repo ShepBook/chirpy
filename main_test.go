@@ -122,7 +122,7 @@ func Test_middlewareMetricsInc_ConcurrentRequests(t *testing.T) {
 func Test_handlerMetrics_ReturnsPlainText(t *testing.T) {
 	cfg := apiConfig{}
 
-	req := httptest.NewRequest(http.MethodGet, "/metrics", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/metrics", nil)
 	rec := httptest.NewRecorder()
 
 	cfg.handlerMetrics(rec, req)
@@ -142,7 +142,7 @@ func Test_handlerMetrics_ReturnsCorrectFormat(t *testing.T) {
 	cfg := apiConfig{}
 	cfg.fileserverHits.Store(42)
 
-	req := httptest.NewRequest(http.MethodGet, "/metrics", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/metrics", nil)
 	rec := httptest.NewRecorder()
 
 	cfg.handlerMetrics(rec, req)
@@ -172,7 +172,7 @@ func Test_handlerMetrics_ReflectsActualCount(t *testing.T) {
 			cfg := apiConfig{}
 			cfg.fileserverHits.Store(tc.count)
 
-			req := httptest.NewRequest(http.MethodGet, "/metrics", nil)
+			req := httptest.NewRequest(http.MethodGet, "/api/metrics", nil)
 			rec := httptest.NewRecorder()
 
 			cfg.handlerMetrics(rec, req)
@@ -243,7 +243,7 @@ func Test_Integration_MetricsWorkflow(t *testing.T) {
 	}
 
 	// Step 2: Check /metrics endpoint shows 3 hits
-	metricsReq := httptest.NewRequest(http.MethodGet, "/metrics", nil)
+	metricsReq := httptest.NewRequest(http.MethodGet, "/api/metrics", nil)
 	metricsRec := httptest.NewRecorder()
 	cfg.handlerMetrics(metricsRec, metricsReq)
 
@@ -263,7 +263,7 @@ func Test_Integration_MetricsWorkflow(t *testing.T) {
 	}
 
 	// Step 4: Verify /metrics now shows 0 hits
-	metricsReq2 := httptest.NewRequest(http.MethodGet, "/metrics", nil)
+	metricsReq2 := httptest.NewRequest(http.MethodGet, "/api/metrics", nil)
 	metricsRec2 := httptest.NewRecorder()
 	cfg.handlerMetrics(metricsRec2, metricsReq2)
 
@@ -370,7 +370,7 @@ func Test_handlerMetrics_GetRequest_Returns200(t *testing.T) {
 	// Create a wrapped handler with method restriction
 	wrappedHandler := MethodRestriction("GET", cfg.handlerMetrics)
 
-	req := httptest.NewRequest(http.MethodGet, "/metrics", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/metrics", nil)
 	rec := httptest.NewRecorder()
 	wrappedHandler(rec, req)
 
@@ -391,7 +391,7 @@ func Test_handlerMetrics_PostRequest_Returns405(t *testing.T) {
 	// Create a wrapped handler with method restriction
 	wrappedHandler := MethodRestriction("GET", cfg.handlerMetrics)
 
-	req := httptest.NewRequest(http.MethodPost, "/metrics", nil)
+	req := httptest.NewRequest(http.MethodPost, "/api/metrics", nil)
 	rec := httptest.NewRecorder()
 	wrappedHandler(rec, req)
 
@@ -412,7 +412,7 @@ func Test_handlerMetrics_PutRequest_Returns405(t *testing.T) {
 	// Create a wrapped handler with method restriction
 	wrappedHandler := MethodRestriction("GET", cfg.handlerMetrics)
 
-	req := httptest.NewRequest(http.MethodPut, "/metrics", nil)
+	req := httptest.NewRequest(http.MethodPut, "/api/metrics", nil)
 	rec := httptest.NewRecorder()
 	wrappedHandler(rec, req)
 
