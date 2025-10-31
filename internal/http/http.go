@@ -6,6 +6,19 @@ import (
 	"time"
 )
 
+// methodRestriction returns a handler that validates the request method
+// and returns HTTP 405 with Allow header if the method doesn't match
+func methodRestriction(method string, next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != method {
+			w.Header().Set("Allow", method)
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
+		next(w, r)
+	}
+}
+
 type Server struct {
 	httpSrv *http.Server
 	mux     *http.ServeMux
@@ -19,7 +32,7 @@ func NewWithConfig(appHandler http.Handler) *Server {
 
 	mux.HandleFunc("/", handleHome)
 	mux.Handle("/app/", appHandler)
-	mux.HandleFunc("/healthz", handleHealthz)
+	mux.HandleFunc("/healthz", methodRestriction("GET", handleHealthz))
 
 	srv := &http.Server{
 		Addr:         ":" + port,

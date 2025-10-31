@@ -288,7 +288,7 @@ func Test_methodRestriction_AllowedMethod_CallsHandler(t *testing.T) {
 		w.Write([]byte("success"))
 	})
 
-	restrictedHandler := methodRestriction("GET", testHandler)
+	restrictedHandler := MethodRestriction("GET", testHandler)
 
 	req := httptest.NewRequest(http.MethodGet, "/test", nil)
 	rec := httptest.NewRecorder()
@@ -315,7 +315,7 @@ func Test_methodRestriction_DisallowedMethod_Returns405(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	restrictedHandler := methodRestriction("POST", testHandler)
+	restrictedHandler := MethodRestriction("POST", testHandler)
 
 	req := httptest.NewRequest(http.MethodGet, "/test", nil)
 	rec := httptest.NewRecorder()
@@ -348,7 +348,7 @@ func Test_methodRestriction_DisallowedMethod_IncludesAllowHeader(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			restrictedHandler := methodRestriction(tc.allowedMethod, testHandler)
+			restrictedHandler := MethodRestriction(tc.allowedMethod, testHandler)
 
 			req := httptest.NewRequest(tc.requestMethod, "/test", nil)
 			rec := httptest.NewRecorder()
@@ -368,7 +368,7 @@ func Test_handlerMetrics_GetRequest_Returns200(t *testing.T) {
 	cfg.fileserverHits.Store(5)
 
 	// Create a wrapped handler with method restriction
-	wrappedHandler := methodRestriction("GET", cfg.handlerMetrics)
+	wrappedHandler := MethodRestriction("GET", cfg.handlerMetrics)
 
 	req := httptest.NewRequest(http.MethodGet, "/metrics", nil)
 	rec := httptest.NewRecorder()
@@ -389,7 +389,7 @@ func Test_handlerMetrics_PostRequest_Returns405(t *testing.T) {
 	cfg := &apiConfig{}
 
 	// Create a wrapped handler with method restriction
-	wrappedHandler := methodRestriction("GET", cfg.handlerMetrics)
+	wrappedHandler := MethodRestriction("GET", cfg.handlerMetrics)
 
 	req := httptest.NewRequest(http.MethodPost, "/metrics", nil)
 	rec := httptest.NewRecorder()
@@ -410,7 +410,7 @@ func Test_handlerMetrics_PutRequest_Returns405(t *testing.T) {
 	cfg := &apiConfig{}
 
 	// Create a wrapped handler with method restriction
-	wrappedHandler := methodRestriction("GET", cfg.handlerMetrics)
+	wrappedHandler := MethodRestriction("GET", cfg.handlerMetrics)
 
 	req := httptest.NewRequest(http.MethodPut, "/metrics", nil)
 	rec := httptest.NewRecorder()
@@ -432,7 +432,7 @@ func Test_handlerReset_PostRequest_Returns200AndResetsCount(t *testing.T) {
 	cfg.fileserverHits.Store(42)
 
 	// Create a wrapped handler with method restriction
-	wrappedHandler := methodRestriction("POST", cfg.handlerReset)
+	wrappedHandler := MethodRestriction("POST", cfg.handlerReset)
 
 	req := httptest.NewRequest(http.MethodPost, "/reset", nil)
 	rec := httptest.NewRecorder()
@@ -456,7 +456,7 @@ func Test_handlerReset_GetRequest_Returns405(t *testing.T) {
 	cfg.fileserverHits.Store(10)
 
 	// Create a wrapped handler with method restriction
-	wrappedHandler := methodRestriction("POST", cfg.handlerReset)
+	wrappedHandler := MethodRestriction("POST", cfg.handlerReset)
 
 	req := httptest.NewRequest(http.MethodGet, "/reset", nil)
 	rec := httptest.NewRecorder()
@@ -485,7 +485,7 @@ func Test_handlerReset_DeleteRequest_Returns405(t *testing.T) {
 	cfg.fileserverHits.Store(20)
 
 	// Create a wrapped handler with method restriction
-	wrappedHandler := methodRestriction("POST", cfg.handlerReset)
+	wrappedHandler := MethodRestriction("POST", cfg.handlerReset)
 
 	req := httptest.NewRequest(http.MethodDelete, "/reset", nil)
 	rec := httptest.NewRecorder()

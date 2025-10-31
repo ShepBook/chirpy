@@ -36,9 +36,9 @@ func (cfg *apiConfig) handlerReset(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-// methodRestriction returns a handler that validates the request method
+// MethodRestriction returns a handler that validates the request method
 // and returns HTTP 405 with Allow header if the method doesn't match
-func methodRestriction(method string, next http.HandlerFunc) http.HandlerFunc {
+func MethodRestriction(method string, next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != method {
 			w.Header().Set("Allow", method)
@@ -64,8 +64,8 @@ func main() {
 
 	// Register metrics and reset handlers
 	mux := server.Mux()
-	mux.HandleFunc("/metrics", methodRestriction("GET", cfg.handlerMetrics))
-	mux.HandleFunc("/reset", methodRestriction("POST", cfg.handlerReset))
+	mux.HandleFunc("/metrics", MethodRestriction("GET", cfg.handlerMetrics))
+	mux.HandleFunc("/reset", MethodRestriction("POST", cfg.handlerReset))
 
 	go func() {
 		log.Println("Starting server on :8080")

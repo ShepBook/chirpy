@@ -230,3 +230,119 @@ func Test_Shutdown_WithTimeoutContext(t *testing.T) {
 	defer cleanupCancel()
 	_ = server.Shutdown(cleanupCtx)
 }
+
+// Phase 4: /healthz Endpoint Method Restriction Testing
+
+func Test_handleHealthz_GetRequest_Returns200(t *testing.T) {
+	server := httpserver.New()
+
+	// Start server
+	go func() {
+		_ = server.ListenAndServe()
+	}()
+
+	// Give server time to start
+	time.Sleep(100 * time.Millisecond)
+
+	// Make GET request to /healthz
+	req, err := http.NewRequest("GET", "http://localhost:8080/healthz", nil)
+	if err != nil {
+		t.Fatalf("Failed to create request: %v", err)
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("Expected successful request, got error: %v", err)
+	}
+	defer resp.Body.Close()
+
+	// Verify status code is 200
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("Expected status code %d, got %d", http.StatusOK, resp.StatusCode)
+	}
+
+	// Cleanup
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	_ = server.Shutdown(ctx)
+}
+
+func Test_handleHealthz_PostRequest_Returns405(t *testing.T) {
+	server := httpserver.New()
+
+	// Start server
+	go func() {
+		_ = server.ListenAndServe()
+	}()
+
+	// Give server time to start
+	time.Sleep(100 * time.Millisecond)
+
+	// Make POST request to /healthz
+	req, err := http.NewRequest("POST", "http://localhost:8080/healthz", nil)
+	if err != nil {
+		t.Fatalf("Failed to create request: %v", err)
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("Expected successful request, got error: %v", err)
+	}
+	defer resp.Body.Close()
+
+	// Verify status code is 405
+	if resp.StatusCode != http.StatusMethodNotAllowed {
+		t.Errorf("Expected status code %d, got %d", http.StatusMethodNotAllowed, resp.StatusCode)
+	}
+
+	// Verify Allow header is set to GET
+	allowHeader := resp.Header.Get("Allow")
+	if allowHeader != "GET" {
+		t.Errorf("Expected Allow header to be 'GET', got '%s'", allowHeader)
+	}
+
+	// Cleanup
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	_ = server.Shutdown(ctx)
+}
+
+func Test_handleHealthz_DeleteRequest_Returns405(t *testing.T) {
+	server := httpserver.New()
+
+	// Start server
+	go func() {
+		_ = server.ListenAndServe()
+	}()
+
+	// Give server time to start
+	time.Sleep(100 * time.Millisecond)
+
+	// Make DELETE request to /healthz
+	req, err := http.NewRequest("DELETE", "http://localhost:8080/healthz", nil)
+	if err != nil {
+		t.Fatalf("Failed to create request: %v", err)
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("Expected successful request, got error: %v", err)
+	}
+	defer resp.Body.Close()
+
+	// Verify status code is 405
+	if resp.StatusCode != http.StatusMethodNotAllowed {
+		t.Errorf("Expected status code %d, got %d", http.StatusMethodNotAllowed, resp.StatusCode)
+	}
+
+	// Verify Allow header is set to GET
+	allowHeader := resp.Header.Get("Allow")
+	if allowHeader != "GET" {
+		t.Errorf("Expected Allow header to be 'GET', got '%s'", allowHeader)
+	}
+
+	// Cleanup
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	_ = server.Shutdown(ctx)
+}
