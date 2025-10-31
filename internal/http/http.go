@@ -11,12 +11,17 @@ type Server struct {
 }
 
 func New() *Server {
+	const filepathRoot = "."
+	const port = "8080"
+
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/", handleHome)
+	mux.Handle("/app/", http.StripPrefix("/app", http.FileServer(http.Dir(filepathRoot))))
+	mux.HandleFunc("/healthz", handleHealthz)
 
 	srv := &http.Server{
-		Addr:         ":8080",
+		Addr:         ":" + port,
 		Handler:      mux,
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
@@ -36,4 +41,10 @@ func (server *Server) Shutdown(ctx context.Context) error {
 
 func handleHome(writer http.ResponseWriter, req *http.Request) {
 	http.ServeFile(writer, req, "index.html")
+}
+
+func handleHealthz(writer http.ResponseWriter, req *http.Request) {
+	writer.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	writer.WriteHeader(http.StatusOK)
+	writer.Write([]byte("OK"))
 }
