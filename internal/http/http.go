@@ -8,16 +8,17 @@ import (
 
 type Server struct {
 	httpSrv *http.Server
+	mux     *http.ServeMux
 }
 
-func New() *Server {
-	const filepathRoot = "."
+// NewWithConfig creates a server with custom handler configuration
+func NewWithConfig(appHandler http.Handler) *Server {
 	const port = "8080"
 
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/", handleHome)
-	mux.Handle("/app/", http.StripPrefix("/app", http.FileServer(http.Dir(filepathRoot))))
+	mux.Handle("/app/", appHandler)
 	mux.HandleFunc("/healthz", handleHealthz)
 
 	srv := &http.Server{
@@ -28,7 +29,21 @@ func New() *Server {
 		IdleTimeout:  120 * time.Second,
 	}
 
-	return &Server{httpSrv: srv}
+	return &Server{
+		httpSrv: srv,
+		mux:     mux,
+	}
+}
+
+func New() *Server {
+	const filepathRoot = "."
+
+	fileServer := http.StripPrefix("/app", http.FileServer(http.Dir(filepathRoot)))
+	return NewWithConfig(fileServer)
+}
+
+func (server *Server) Mux() *http.ServeMux {
+	return server.mux
 }
 
 func (server *Server) ListenAndServe() error {

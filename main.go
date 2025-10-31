@@ -31,8 +31,28 @@ func (cfg *apiConfig) handlerMetrics(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Hits: %d", cfg.fileserverHits.Load())
 }
 
+func (cfg *apiConfig) handlerReset(w http.ResponseWriter, r *http.Request) {
+	cfg.fileserverHits.Store(0)
+	w.WriteHeader(http.StatusOK)
+}
+
 func main() {
-	server := httpserver.New()
+	const filepathRoot = "."
+
+	// Instantiate apiConfig
+	cfg := &apiConfig{}
+
+	// Create file server and wrap with metrics middleware
+	fileServer := http.StripPrefix("/app", http.FileServer(http.Dir(filepathRoot)))
+	wrappedFileServer := cfg.middlewareMetricsInc(fileServer)
+
+	// Create server with wrapped file server
+	server := httpserver.NewWithConfig(wrappedFileServer)
+
+	// Register metrics and reset handlers
+	mux := server.Mux()
+	mux.HandleFunc("/metrics", cfg.handlerMetrics)
+	mux.HandleFunc("/reset", cfg.handlerReset)
 
 	go func() {
 		log.Println("Starting server on :8080")

@@ -189,3 +189,92 @@ func Test_handlerMetrics_ReflectsActualCount(t *testing.T) {
 		})
 	}
 }
+
+// Test_handlerReset_ResetsCounter verifies reset endpoint sets counter to 0 using Store(0)
+func Test_handlerReset_ResetsCounter(t *testing.T) {
+	cfg := apiConfig{}
+	cfg.fileserverHits.Store(42)
+
+	req := httptest.NewRequest(http.MethodPost, "/reset", nil)
+	rec := httptest.NewRecorder()
+
+	cfg.handlerReset(rec, req)
+
+	got := cfg.fileserverHits.Load()
+	want := int32(0)
+	if got != want {
+		t.Errorf("After reset: fileserverHits = %d, want %d", got, want)
+	}
+}
+
+// Test_handlerReset_ReturnsSuccess verifies reset endpoint returns HTTP 200
+func Test_handlerReset_ReturnsSuccess(t *testing.T) {
+	cfg := apiConfig{}
+	cfg.fileserverHits.Store(100)
+
+	req := httptest.NewRequest(http.MethodPost, "/reset", nil)
+	rec := httptest.NewRecorder()
+
+	cfg.handlerReset(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Errorf("Status code = %d, want %d", rec.Code, http.StatusOK)
+	}
+}
+
+// Test_Integration_MetricsWorkflow tests end-to-end workflow: requests -> metrics increment -> reset -> verify zero
+func Test_Integration_MetricsWorkflow(t *testing.T) {
+	cfg := &apiConfig{}
+
+	// Create a test file server handler
+	fileServerHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("file content"))
+	})
+
+	// Wrap it with metrics middleware
+	wrappedHandler := cfg.middlewareMetricsInc(fileServerHandler)
+
+	// Step 1: Make 3 requests to the file server
+	for i := 0; i < 3; i++ {
+		req := httptest.NewRequest(http.MethodGet, "/app/index.html", nil)
+		rec := httptest.NewRecorder()
+		wrappedHandler.ServeHTTP(rec, req)
+	}
+
+	// Step 2: Check /metrics endpoint shows 3 hits
+	metricsReq := httptest.NewRequest(http.MethodGet, "/metrics", nil)
+	metricsRec := httptest.NewRecorder()
+	cfg.handlerMetrics(metricsRec, metricsReq)
+
+	metricsBody := metricsRec.Body.String()
+	wantMetrics := "Hits: 3"
+	if metricsBody != wantMetrics {
+		t.Errorf("Metrics before reset = %q, want %q", metricsBody, wantMetrics)
+	}
+
+	// Step 3: Call /reset endpoint
+	resetReq := httptest.NewRequest(http.MethodPost, "/reset", nil)
+	resetRec := httptest.NewRecorder()
+	cfg.handlerReset(resetRec, resetReq)
+
+	if resetRec.Code != http.StatusOK {
+		t.Errorf("Reset status code = %d, want %d", resetRec.Code, http.StatusOK)
+	}
+
+	// Step 4: Verify /metrics now shows 0 hits
+	metricsReq2 := httptest.NewRequest(http.MethodGet, "/metrics", nil)
+	metricsRec2 := httptest.NewRecorder()
+	cfg.handlerMetrics(metricsRec2, metricsReq2)
+
+	metricsBody2 := metricsRec2.Body.String()
+	wantMetricsAfterReset := "Hits: 0"
+	if metricsBody2 != wantMetricsAfterReset {
+		t.Errorf("Metrics after reset = %q, want %q", metricsBody2, wantMetricsAfterReset)
+	}
+
+	// Verify internal counter is actually 0
+	if cfg.fileserverHits.Load() != 0 {
+		t.Errorf("Internal counter after reset = %d, want 0", cfg.fileserverHits.Load())
+	}
+}
