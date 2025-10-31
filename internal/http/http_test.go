@@ -244,8 +244,8 @@ func Test_handleHealthz_GetRequest_Returns200(t *testing.T) {
 	// Give server time to start
 	time.Sleep(100 * time.Millisecond)
 
-	// Make GET request to /healthz
-	req, err := http.NewRequest("GET", "http://localhost:8080/healthz", nil)
+	// Make GET request to /api/healthz
+	req, err := http.NewRequest("GET", "http://localhost:8080/api/healthz", nil)
 	if err != nil {
 		t.Fatalf("Failed to create request: %v", err)
 	}
@@ -278,8 +278,8 @@ func Test_handleHealthz_PostRequest_Returns405(t *testing.T) {
 	// Give server time to start
 	time.Sleep(100 * time.Millisecond)
 
-	// Make POST request to /healthz
-	req, err := http.NewRequest("POST", "http://localhost:8080/healthz", nil)
+	// Make POST request to /api/healthz
+	req, err := http.NewRequest("POST", "http://localhost:8080/api/healthz", nil)
 	if err != nil {
 		t.Fatalf("Failed to create request: %v", err)
 	}
@@ -318,8 +318,8 @@ func Test_handleHealthz_DeleteRequest_Returns405(t *testing.T) {
 	// Give server time to start
 	time.Sleep(100 * time.Millisecond)
 
-	// Make DELETE request to /healthz
-	req, err := http.NewRequest("DELETE", "http://localhost:8080/healthz", nil)
+	// Make DELETE request to /api/healthz
+	req, err := http.NewRequest("DELETE", "http://localhost:8080/api/healthz", nil)
 	if err != nil {
 		t.Fatalf("Failed to create request: %v", err)
 	}

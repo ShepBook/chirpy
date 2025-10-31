@@ -32,7 +32,7 @@ func NewWithConfig(appHandler http.Handler) *Server {
 
 	mux.HandleFunc("/", handleHome)
 	mux.Handle("/app/", appHandler)
-	mux.HandleFunc("/healthz", methodRestriction("GET", handleHealthz))
+	mux.HandleFunc("/api/healthz", methodRestriction("GET", handleHealthz))
 
 	srv := &http.Server{
 		Addr:         ":" + port,
