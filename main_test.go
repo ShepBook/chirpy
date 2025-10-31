@@ -195,7 +195,7 @@ func Test_handlerReset_ResetsCounter(t *testing.T) {
 	cfg := apiConfig{}
 	cfg.fileserverHits.Store(42)
 
-	req := httptest.NewRequest(http.MethodPost, "/reset", nil)
+	req := httptest.NewRequest(http.MethodPost, "/api/reset", nil)
 	rec := httptest.NewRecorder()
 
 	cfg.handlerReset(rec, req)
@@ -212,7 +212,7 @@ func Test_handlerReset_ReturnsSuccess(t *testing.T) {
 	cfg := apiConfig{}
 	cfg.fileserverHits.Store(100)
 
-	req := httptest.NewRequest(http.MethodPost, "/reset", nil)
+	req := httptest.NewRequest(http.MethodPost, "/api/reset", nil)
 	rec := httptest.NewRecorder()
 
 	cfg.handlerReset(rec, req)
@@ -253,8 +253,8 @@ func Test_Integration_MetricsWorkflow(t *testing.T) {
 		t.Errorf("Metrics before reset = %q, want %q", metricsBody, wantMetrics)
 	}
 
-	// Step 3: Call /reset endpoint
-	resetReq := httptest.NewRequest(http.MethodPost, "/reset", nil)
+	// Step 3: Call /api/reset endpoint
+	resetReq := httptest.NewRequest(http.MethodPost, "/api/reset", nil)
 	resetRec := httptest.NewRecorder()
 	cfg.handlerReset(resetRec, resetReq)
 
@@ -426,7 +426,7 @@ func Test_handlerMetrics_PutRequest_Returns405(t *testing.T) {
 	}
 }
 
-// Test_handlerReset_PostRequest_Returns200AndResetsCount verifies that POST request to /reset returns 200 and resets counter to 0
+// Test_handlerReset_PostRequest_Returns200AndResetsCount verifies that POST request to /api/reset returns 200 and resets counter to 0
 func Test_handlerReset_PostRequest_Returns200AndResetsCount(t *testing.T) {
 	cfg := &apiConfig{}
 	cfg.fileserverHits.Store(42)
@@ -434,7 +434,7 @@ func Test_handlerReset_PostRequest_Returns200AndResetsCount(t *testing.T) {
 	// Create a wrapped handler with method restriction
 	wrappedHandler := MethodRestriction("POST", cfg.handlerReset)
 
-	req := httptest.NewRequest(http.MethodPost, "/reset", nil)
+	req := httptest.NewRequest(http.MethodPost, "/api/reset", nil)
 	rec := httptest.NewRecorder()
 	wrappedHandler(rec, req)
 
@@ -450,7 +450,7 @@ func Test_handlerReset_PostRequest_Returns200AndResetsCount(t *testing.T) {
 	}
 }
 
-// Test_handlerReset_GetRequest_Returns405 verifies that GET request to /reset returns 405 with Allow header
+// Test_handlerReset_GetRequest_Returns405 verifies that GET request to /api/reset returns 405 with Allow header
 func Test_handlerReset_GetRequest_Returns405(t *testing.T) {
 	cfg := &apiConfig{}
 	cfg.fileserverHits.Store(10)
@@ -458,7 +458,7 @@ func Test_handlerReset_GetRequest_Returns405(t *testing.T) {
 	// Create a wrapped handler with method restriction
 	wrappedHandler := MethodRestriction("POST", cfg.handlerReset)
 
-	req := httptest.NewRequest(http.MethodGet, "/reset", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/reset", nil)
 	rec := httptest.NewRecorder()
 	wrappedHandler(rec, req)
 
@@ -479,7 +479,7 @@ func Test_handlerReset_GetRequest_Returns405(t *testing.T) {
 	}
 }
 
-// Test_handlerReset_DeleteRequest_Returns405 verifies that DELETE request to /reset returns 405 with Allow header
+// Test_handlerReset_DeleteRequest_Returns405 verifies that DELETE request to /api/reset returns 405 with Allow header
 func Test_handlerReset_DeleteRequest_Returns405(t *testing.T) {
 	cfg := &apiConfig{}
 	cfg.fileserverHits.Store(20)
@@ -487,7 +487,7 @@ func Test_handlerReset_DeleteRequest_Returns405(t *testing.T) {
 	// Create a wrapped handler with method restriction
 	wrappedHandler := MethodRestriction("POST", cfg.handlerReset)
 
-	req := httptest.NewRequest(http.MethodDelete, "/reset", nil)
+	req := httptest.NewRequest(http.MethodDelete, "/api/reset", nil)
 	rec := httptest.NewRecorder()
 	wrappedHandler(rec, req)
 

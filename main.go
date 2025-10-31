@@ -65,7 +65,7 @@ func main() {
 	// Register metrics and reset handlers
 	mux := server.Mux()
 	mux.HandleFunc("/api/metrics", MethodRestriction("GET", cfg.handlerMetrics))
-	mux.HandleFunc("/reset", MethodRestriction("POST", cfg.handlerReset))
+	mux.HandleFunc("/api/reset", MethodRestriction("POST", cfg.handlerReset))
 
 	go func() {
 		log.Println("Starting server on :8080")
