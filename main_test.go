@@ -425,3 +425,85 @@ func Test_handlerMetrics_PutRequest_Returns405(t *testing.T) {
 		t.Errorf("Allow header = %q, want %q", allowHeader, "GET")
 	}
 }
+
+// Test_handlerReset_PostRequest_Returns200AndResetsCount verifies that POST request to /reset returns 200 and resets counter to 0
+func Test_handlerReset_PostRequest_Returns200AndResetsCount(t *testing.T) {
+	cfg := &apiConfig{}
+	cfg.fileserverHits.Store(42)
+
+	// Create a wrapped handler with method restriction
+	wrappedHandler := methodRestriction("POST", cfg.handlerReset)
+
+	req := httptest.NewRequest(http.MethodPost, "/reset", nil)
+	rec := httptest.NewRecorder()
+	wrappedHandler(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Errorf("Status code = %d, want %d", rec.Code, http.StatusOK)
+	}
+
+	// Verify counter was reset to 0
+	got := cfg.fileserverHits.Load()
+	want := int32(0)
+	if got != want {
+		t.Errorf("After reset: fileserverHits = %d, want %d", got, want)
+	}
+}
+
+// Test_handlerReset_GetRequest_Returns405 verifies that GET request to /reset returns 405 with Allow header
+func Test_handlerReset_GetRequest_Returns405(t *testing.T) {
+	cfg := &apiConfig{}
+	cfg.fileserverHits.Store(10)
+
+	// Create a wrapped handler with method restriction
+	wrappedHandler := methodRestriction("POST", cfg.handlerReset)
+
+	req := httptest.NewRequest(http.MethodGet, "/reset", nil)
+	rec := httptest.NewRecorder()
+	wrappedHandler(rec, req)
+
+	if rec.Code != http.StatusMethodNotAllowed {
+		t.Errorf("Status code = %d, want %d", rec.Code, http.StatusMethodNotAllowed)
+	}
+
+	allowHeader := rec.Header().Get("Allow")
+	if allowHeader != "POST" {
+		t.Errorf("Allow header = %q, want %q", allowHeader, "POST")
+	}
+
+	// Verify counter was NOT reset
+	got := cfg.fileserverHits.Load()
+	want := int32(10)
+	if got != want {
+		t.Errorf("Counter should not change: fileserverHits = %d, want %d", got, want)
+	}
+}
+
+// Test_handlerReset_DeleteRequest_Returns405 verifies that DELETE request to /reset returns 405 with Allow header
+func Test_handlerReset_DeleteRequest_Returns405(t *testing.T) {
+	cfg := &apiConfig{}
+	cfg.fileserverHits.Store(20)
+
+	// Create a wrapped handler with method restriction
+	wrappedHandler := methodRestriction("POST", cfg.handlerReset)
+
+	req := httptest.NewRequest(http.MethodDelete, "/reset", nil)
+	rec := httptest.NewRecorder()
+	wrappedHandler(rec, req)
+
+	if rec.Code != http.StatusMethodNotAllowed {
+		t.Errorf("Status code = %d, want %d", rec.Code, http.StatusMethodNotAllowed)
+	}
+
+	allowHeader := rec.Header().Get("Allow")
+	if allowHeader != "POST" {
+		t.Errorf("Allow header = %q, want %q", allowHeader, "POST")
+	}
+
+	// Verify counter was NOT reset
+	got := cfg.fileserverHits.Load()
+	want := int32(20)
+	if got != want {
+		t.Errorf("Counter should not change: fileserverHits = %d, want %d", got, want)
+	}
+}
