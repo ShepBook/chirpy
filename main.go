@@ -6,11 +6,16 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"sync/atomic"
 	"syscall"
 	"time"
 
 	httpserver "github.com/ShepBook/chirpy/internal/http"
 )
+
+type apiConfig struct {
+	fileserverHits atomic.Int32
+}
 
 func main() {
 	server := httpserver.New()
