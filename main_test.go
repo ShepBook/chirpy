@@ -278,3 +278,86 @@ func Test_Integration_MetricsWorkflow(t *testing.T) {
 		t.Errorf("Internal counter after reset = %d, want 0", cfg.fileserverHits.Load())
 	}
 }
+
+// Test_methodRestriction_AllowedMethod_CallsHandler verifies that when request method matches allowed method, the wrapped handler is called
+func Test_methodRestriction_AllowedMethod_CallsHandler(t *testing.T) {
+	handlerCalled := false
+	testHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		handlerCalled = true
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("success"))
+	})
+
+	restrictedHandler := methodRestriction("GET", testHandler)
+
+	req := httptest.NewRequest(http.MethodGet, "/test", nil)
+	rec := httptest.NewRecorder()
+	restrictedHandler(rec, req)
+
+	if !handlerCalled {
+		t.Error("Expected wrapped handler to be called for allowed method")
+	}
+
+	if rec.Code != http.StatusOK {
+		t.Errorf("Status code = %d, want %d", rec.Code, http.StatusOK)
+	}
+
+	if rec.Body.String() != "success" {
+		t.Errorf("Response body = %q, want %q", rec.Body.String(), "success")
+	}
+}
+
+// Test_methodRestriction_DisallowedMethod_Returns405 verifies that when request method doesn't match, returns HTTP 405
+func Test_methodRestriction_DisallowedMethod_Returns405(t *testing.T) {
+	handlerCalled := false
+	testHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		handlerCalled = true
+		w.WriteHeader(http.StatusOK)
+	})
+
+	restrictedHandler := methodRestriction("POST", testHandler)
+
+	req := httptest.NewRequest(http.MethodGet, "/test", nil)
+	rec := httptest.NewRecorder()
+	restrictedHandler(rec, req)
+
+	if handlerCalled {
+		t.Error("Expected wrapped handler NOT to be called for disallowed method")
+	}
+
+	if rec.Code != http.StatusMethodNotAllowed {
+		t.Errorf("Status code = %d, want %d", rec.Code, http.StatusMethodNotAllowed)
+	}
+}
+
+// Test_methodRestriction_DisallowedMethod_IncludesAllowHeader verifies that 405 responses include Allow header per RFC 7231
+func Test_methodRestriction_DisallowedMethod_IncludesAllowHeader(t *testing.T) {
+	testHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+
+	testCases := []struct {
+		name          string
+		allowedMethod string
+		requestMethod string
+	}{
+		{"GET allowed, POST attempted", "GET", http.MethodPost},
+		{"POST allowed, GET attempted", "POST", http.MethodGet},
+		{"DELETE allowed, PUT attempted", "DELETE", http.MethodPut},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			restrictedHandler := methodRestriction(tc.allowedMethod, testHandler)
+
+			req := httptest.NewRequest(tc.requestMethod, "/test", nil)
+			rec := httptest.NewRecorder()
+			restrictedHandler(rec, req)
+
+			allowHeader := rec.Header().Get("Allow")
+			if allowHeader != tc.allowedMethod {
+				t.Errorf("Allow header = %q, want %q", allowHeader, tc.allowedMethod)
+			}
+		})
+	}
+}

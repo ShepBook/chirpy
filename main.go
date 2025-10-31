@@ -36,6 +36,19 @@ func (cfg *apiConfig) handlerReset(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+// methodRestriction returns a handler that validates the request method
+// and returns HTTP 405 with Allow header if the method doesn't match
+func methodRestriction(method string, next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != method {
+			w.Header().Set("Allow", method)
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
+		next(w, r)
+	}
+}
+
 func main() {
 	const filepathRoot = "."
 
