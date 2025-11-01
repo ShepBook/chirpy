@@ -138,8 +138,8 @@ func HandleValidateChirp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Valid chirp
+	// Valid chirp - apply profanity filter
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(validateChirpResponse{CleanedBody: req.Body})
+	json.NewEncoder(w).Encode(validateChirpResponse{CleanedBody: cleanProfanity(req.Body)})
 }

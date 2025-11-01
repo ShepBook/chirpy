@@ -763,3 +763,123 @@ func Test_cleanProfanity_WithinWord_DoesNotReplace(t *testing.T) {
 		})
 	}
 }
+
+// Phase 3: Profanity Filter Integration Tests
+
+func Test_handleValidateChirp_WithProfanity_ReturnsCleaned(t *testing.T) {
+	reqBody := `{"body":"This is a kerfuffle opinion"}`
+	req := httptest.NewRequest(http.MethodPost, "/api/validate_chirp", strings.NewReader(reqBody))
+	rec := httptest.NewRecorder()
+
+	httpserver.HandleValidateChirp(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Errorf("Status code = %d, want %d", rec.Code, http.StatusOK)
+	}
+
+	contentType := rec.Header().Get("Content-Type")
+	if contentType != "application/json" {
+		t.Errorf("Content-Type = %q, want %q", contentType, "application/json")
+	}
+
+	var response struct {
+		CleanedBody string `json:"cleaned_body"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &response); err != nil {
+		t.Fatalf("Failed to unmarshal response: %v", err)
+	}
+
+	expectedBody := "This is a **** opinion"
+	if response.CleanedBody != expectedBody {
+		t.Errorf("CleanedBody = %q, want %q", response.CleanedBody, expectedBody)
+	}
+}
+
+func Test_handleValidateChirp_ProfanityTooLong_Returns400(t *testing.T) {
+	// Create 141 character string with profane word
+	chirp := strings.Repeat("a", 132) + " kerfuffle" // 132 + 1 + 9 = 142 chars (too long)
+	reqBody := `{"body":"` + chirp + `"}`
+	req := httptest.NewRequest(http.MethodPost, "/api/validate_chirp", strings.NewReader(reqBody))
+	rec := httptest.NewRecorder()
+
+	httpserver.HandleValidateChirp(rec, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Errorf("Status code = %d, want %d", rec.Code, http.StatusBadRequest)
+	}
+
+	contentType := rec.Header().Get("Content-Type")
+	if contentType != "application/json" {
+		t.Errorf("Content-Type = %q, want %q", contentType, "application/json")
+	}
+
+	var response struct {
+		Error string `json:"error"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &response); err != nil {
+		t.Fatalf("Failed to unmarshal response: %v", err)
+	}
+
+	expectedError := "Chirp is too long"
+	if response.Error != expectedError {
+		t.Errorf("Error = %q, want %q", response.Error, expectedError)
+	}
+}
+
+func Test_handleValidateChirp_MultipleProfaneWords_CleansAll(t *testing.T) {
+	reqBody := `{"body":"kerfuffle and sharbert and fornax are bad"}`
+	req := httptest.NewRequest(http.MethodPost, "/api/validate_chirp", strings.NewReader(reqBody))
+	rec := httptest.NewRecorder()
+
+	httpserver.HandleValidateChirp(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Errorf("Status code = %d, want %d", rec.Code, http.StatusOK)
+	}
+
+	contentType := rec.Header().Get("Content-Type")
+	if contentType != "application/json" {
+		t.Errorf("Content-Type = %q, want %q", contentType, "application/json")
+	}
+
+	var response struct {
+		CleanedBody string `json:"cleaned_body"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &response); err != nil {
+		t.Fatalf("Failed to unmarshal response: %v", err)
+	}
+
+	expectedBody := "**** and **** and **** are bad"
+	if response.CleanedBody != expectedBody {
+		t.Errorf("CleanedBody = %q, want %q", response.CleanedBody, expectedBody)
+	}
+}
+
+func Test_handleValidateChirp_ProfaneWordWithPunctuation_NotCleaned(t *testing.T) {
+	reqBody := `{"body":"Sharbert!"}`
+	req := httptest.NewRequest(http.MethodPost, "/api/validate_chirp", strings.NewReader(reqBody))
+	rec := httptest.NewRecorder()
+
+	httpserver.HandleValidateChirp(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Errorf("Status code = %d, want %d", rec.Code, http.StatusOK)
+	}
+
+	contentType := rec.Header().Get("Content-Type")
+	if contentType != "application/json" {
+		t.Errorf("Content-Type = %q, want %q", contentType, "application/json")
+	}
+
+	var response struct {
+		CleanedBody string `json:"cleaned_body"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &response); err != nil {
+		t.Fatalf("Failed to unmarshal response: %v", err)
+	}
+
+	expectedBody := "Sharbert!"
+	if response.CleanedBody != expectedBody {
+		t.Errorf("CleanedBody = %q, want %q", response.CleanedBody, expectedBody)
+	}
+}
