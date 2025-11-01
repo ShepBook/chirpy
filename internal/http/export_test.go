@@ -5,4 +5,3 @@ package http
 
 // CleanProfanityForTest exports cleanProfanity for testing
 var CleanProfanityForTest = cleanProfanity
-

@@ -373,14 +373,15 @@ func Test_handleValidateChirp_ValidChirp_Returns200(t *testing.T) {
 	}
 
 	var response struct {
-		Valid bool `json:"valid"`
+		CleanedBody string `json:"cleaned_body"`
 	}
 	if err := json.Unmarshal(rec.Body.Bytes(), &response); err != nil {
 		t.Fatalf("Failed to unmarshal response: %v", err)
 	}
 
-	if !response.Valid {
-		t.Errorf("Valid = %v, want true", response.Valid)
+	expectedBody := "This is a valid chirp"
+	if response.CleanedBody != expectedBody {
+		t.Errorf("CleanedBody = %q, want %q", response.CleanedBody, expectedBody)
 	}
 }
 
@@ -403,14 +404,14 @@ func Test_handleValidateChirp_Exactly140Chars_Returns200(t *testing.T) {
 	}
 
 	var response struct {
-		Valid bool `json:"valid"`
+		CleanedBody string `json:"cleaned_body"`
 	}
 	if err := json.Unmarshal(rec.Body.Bytes(), &response); err != nil {
 		t.Fatalf("Failed to unmarshal response: %v", err)
 	}
 
-	if !response.Valid {
-		t.Errorf("Valid = %v, want true", response.Valid)
+	if response.CleanedBody != chirp {
+		t.Errorf("CleanedBody length = %d, want %d", len(response.CleanedBody), len(chirp))
 	}
 }
 
@@ -520,14 +521,14 @@ func Test_handleValidateChirp_MissingBodyField_ReturnsValid(t *testing.T) {
 	}
 
 	var response struct {
-		Valid bool `json:"valid"`
+		CleanedBody string `json:"cleaned_body"`
 	}
 	if err := json.Unmarshal(rec.Body.Bytes(), &response); err != nil {
 		t.Fatalf("Failed to unmarshal response: %v", err)
 	}
 
-	if !response.Valid {
-		t.Errorf("Valid = %v, want true (empty string is valid)", response.Valid)
+	if response.CleanedBody != "" {
+		t.Errorf("CleanedBody = %q, want empty string", response.CleanedBody)
 	}
 }
 
@@ -762,4 +763,3 @@ func Test_cleanProfanity_WithinWord_DoesNotReplace(t *testing.T) {
 		})
 	}
 }
-

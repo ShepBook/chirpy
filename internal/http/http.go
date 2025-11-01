@@ -16,7 +16,7 @@ func cleanProfanity(text string) string {
 	// ($|\s) ensures the word ends before whitespace or at string end
 	pattern := `(?i)(^|\s)(kerfuffle|sharbert|fornax)($|\s)`
 	re := regexp.MustCompile(pattern)
-	
+
 	// Use ReplaceAllStringFunc to handle each match properly
 	// This prevents boundary overlap issues with multiple replacements
 	result := text
@@ -111,7 +111,7 @@ type validateChirpRequest struct {
 }
 
 type validateChirpResponse struct {
-	Valid bool `json:"valid"`
+	CleanedBody string `json:"cleaned_body"`
 }
 
 type errorResponse struct {
@@ -141,5 +141,5 @@ func HandleValidateChirp(w http.ResponseWriter, r *http.Request) {
 	// Valid chirp
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(validateChirpResponse{Valid: true})
+	json.NewEncoder(w).Encode(validateChirpResponse{CleanedBody: req.Body})
 }
