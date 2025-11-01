@@ -12,6 +12,10 @@ import (
 	httpserver "github.com/ShepBook/chirpy/internal/http"
 )
 
+// Helper to access unexported cleanProfanity function for testing
+// We need to create a test helper in the http package or export the function
+// For now, we'll need to change our approach - either export it or use same package
+
 // Phase 1: Constructor Testing
 
 func Test_New_ReturnsServerWithCorrectConfiguration(t *testing.T) {
@@ -608,3 +612,154 @@ func Test_handleValidateChirp_DeleteRequest_Returns405(t *testing.T) {
 	defer cancel()
 	_ = server.Shutdown(ctx)
 }
+
+// Phase 1: Profanity Filter Function Tests
+
+func Test_cleanProfanity_NoMatches_ReturnsOriginal(t *testing.T) {
+	input := "This is a nice clean message"
+	result := httpserver.CleanProfanityForTest(input)
+
+	if result != input {
+		t.Errorf("Expected %q, got %q", input, result)
+	}
+}
+
+func Test_cleanProfanity_SingleMatch_ReplacesWord(t *testing.T) {
+	input := "What a kerfuffle this is"
+	expected := "What a **** this is"
+	result := httpserver.CleanProfanityForTest(input)
+
+	if result != expected {
+		t.Errorf("Expected %q, got %q", expected, result)
+	}
+}
+
+func Test_cleanProfanity_CaseInsensitive_ReplacesAllCases(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "lowercase",
+			input:    "I love kerfuffle",
+			expected: "I love ****",
+		},
+		{
+			name:     "uppercase",
+			input:    "I love KERFUFFLE",
+			expected: "I love ****",
+		},
+		{
+			name:     "title case",
+			input:    "I love Kerfuffle",
+			expected: "I love ****",
+		},
+		{
+			name:     "mixed case",
+			input:    "I love KeRfUfFlE",
+			expected: "I love ****",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := httpserver.CleanProfanityForTest(tt.input)
+			if result != tt.expected {
+				t.Errorf("Expected %q, got %q", tt.expected, result)
+			}
+		})
+	}
+}
+
+func Test_cleanProfanity_AllThreeWords_ReplacesAll(t *testing.T) {
+	input := "kerfuffle and sharbert and fornax"
+	expected := "**** and **** and ****"
+	result := httpserver.CleanProfanityForTest(input)
+
+	if result != expected {
+		t.Errorf("Expected %q, got %q", expected, result)
+	}
+}
+
+func Test_cleanProfanity_MultipleInstances_ReplacesAll(t *testing.T) {
+	input := "kerfuffle kerfuffle kerfuffle"
+	expected := "**** **** ****"
+	result := httpserver.CleanProfanityForTest(input)
+
+	if result != expected {
+		t.Errorf("Expected %q, got %q", expected, result)
+	}
+}
+
+func Test_cleanProfanity_WithPunctuation_DoesNotReplace(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "exclamation mark",
+			input:    "Sharbert!",
+			expected: "Sharbert!",
+		},
+		{
+			name:     "period",
+			input:    "kerfuffle.",
+			expected: "kerfuffle.",
+		},
+		{
+			name:     "comma",
+			input:    "fornax,",
+			expected: "fornax,",
+		},
+		{
+			name:     "question mark",
+			input:    "kerfuffle?",
+			expected: "kerfuffle?",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := httpserver.CleanProfanityForTest(tt.input)
+			if result != tt.expected {
+				t.Errorf("Expected %q, got %q", tt.expected, result)
+			}
+		})
+	}
+}
+
+func Test_cleanProfanity_WithinWord_DoesNotReplace(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "kerfuffle embedded",
+			input:    "kerfuffled",
+			expected: "kerfuffled",
+		},
+		{
+			name:     "sharbert embedded",
+			input:    "sharbertson",
+			expected: "sharbertson",
+		},
+		{
+			name:     "fornax embedded",
+			input:    "fornaxation",
+			expected: "fornaxation",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := httpserver.CleanProfanityForTest(tt.input)
+			if result != tt.expected {
+				t.Errorf("Expected %q, got %q", tt.expected, result)
+			}
+		})
+	}
+}
+

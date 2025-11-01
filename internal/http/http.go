@@ -4,8 +4,33 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"regexp"
 	"time"
 )
+
+// cleanProfanity replaces profane words with asterisks using word boundary matching
+func cleanProfanity(text string) string {
+	// Create regex pattern for the three profane words with strict boundaries
+	// (?i) makes it case-insensitive
+	// (^|\s) ensures the word starts after whitespace or at string start
+	// ($|\s) ensures the word ends before whitespace or at string end
+	pattern := `(?i)(^|\s)(kerfuffle|sharbert|fornax)($|\s)`
+	re := regexp.MustCompile(pattern)
+	
+	// Use ReplaceAllStringFunc to handle each match properly
+	// This prevents boundary overlap issues with multiple replacements
+	result := text
+	for {
+		match := re.FindStringSubmatchIndex(result)
+		if match == nil {
+			break
+		}
+		// match[4] and match[5] are the start and end of the profane word (group 2)
+		// Replace just the word, preserving boundaries
+		result = result[:match[4]] + "****" + result[match[5]:]
+	}
+	return result
+}
 
 // methodRestriction returns a handler that validates the request method
 // and returns HTTP 405 with Allow header if the method doesn't match
