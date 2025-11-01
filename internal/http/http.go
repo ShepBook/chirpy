@@ -2,6 +2,7 @@ package http
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"time"
 )
@@ -76,3 +77,44 @@ func handleHealthz(writer http.ResponseWriter, req *http.Request) {
 	writer.WriteHeader(http.StatusOK)
 	writer.Write([]byte("OK"))
 }
+
+// Request/Response structures for chirp validation
+
+type validateChirpRequest struct {
+	Body string `json:"body"`
+}
+
+type validateChirpResponse struct {
+	Valid bool `json:"valid"`
+}
+
+type errorResponse struct {
+	Error string `json:"error"`
+}
+
+// HandleValidateChirp validates that a chirp is within the allowed character limit
+func HandleValidateChirp(w http.ResponseWriter, r *http.Request) {
+	var req validateChirpRequest
+	
+	// Decode the JSON request
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(errorResponse{Error: "Invalid JSON"})
+		return
+	}
+	
+	// Validate chirp length using runes for proper Unicode support
+	if len([]rune(req.Body)) > 140 {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(errorResponse{Error: "Chirp is too long"})
+		return
+	}
+	
+	// Valid chirp
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(validateChirpResponse{Valid: true})
+}
+

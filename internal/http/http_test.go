@@ -2,7 +2,10 @@ package http_test
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
+	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -345,4 +348,95 @@ func Test_handleHealthz_DeleteRequest_Returns405(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 	_ = server.Shutdown(ctx)
+}
+
+// Phase 1: Chirp Validation Handler Testing
+
+func Test_handleValidateChirp_ValidChirp_Returns200(t *testing.T) {
+	reqBody := `{"body":"This is a valid chirp"}`
+	req := httptest.NewRequest(http.MethodPost, "/api/validate_chirp", strings.NewReader(reqBody))
+	rec := httptest.NewRecorder()
+
+	httpserver.HandleValidateChirp(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Errorf("Status code = %d, want %d", rec.Code, http.StatusOK)
+	}
+
+	contentType := rec.Header().Get("Content-Type")
+	if contentType != "application/json" {
+		t.Errorf("Content-Type = %q, want %q", contentType, "application/json")
+	}
+
+	var response struct {
+		Valid bool `json:"valid"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &response); err != nil {
+		t.Fatalf("Failed to unmarshal response: %v", err)
+	}
+
+	if !response.Valid {
+		t.Errorf("Valid = %v, want true", response.Valid)
+	}
+}
+
+func Test_handleValidateChirp_Exactly140Chars_Returns200(t *testing.T) {
+	// Create exactly 140 character string
+	chirp := strings.Repeat("a", 140)
+	reqBody := `{"body":"` + chirp + `"}`
+	req := httptest.NewRequest(http.MethodPost, "/api/validate_chirp", strings.NewReader(reqBody))
+	rec := httptest.NewRecorder()
+
+	httpserver.HandleValidateChirp(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Errorf("Status code = %d, want %d", rec.Code, http.StatusOK)
+	}
+
+	contentType := rec.Header().Get("Content-Type")
+	if contentType != "application/json" {
+		t.Errorf("Content-Type = %q, want %q", contentType, "application/json")
+	}
+
+	var response struct {
+		Valid bool `json:"valid"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &response); err != nil {
+		t.Fatalf("Failed to unmarshal response: %v", err)
+	}
+
+	if !response.Valid {
+		t.Errorf("Valid = %v, want true", response.Valid)
+	}
+}
+
+func Test_handleValidateChirp_TooLong_Returns400(t *testing.T) {
+	// Create 141 character string
+	chirp := strings.Repeat("a", 141)
+	reqBody := `{"body":"` + chirp + `"}`
+	req := httptest.NewRequest(http.MethodPost, "/api/validate_chirp", strings.NewReader(reqBody))
+	rec := httptest.NewRecorder()
+
+	httpserver.HandleValidateChirp(rec, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Errorf("Status code = %d, want %d", rec.Code, http.StatusBadRequest)
+	}
+
+	contentType := rec.Header().Get("Content-Type")
+	if contentType != "application/json" {
+		t.Errorf("Content-Type = %q, want %q", contentType, "application/json")
+	}
+
+	var response struct {
+		Error string `json:"error"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &response); err != nil {
+		t.Fatalf("Failed to unmarshal response: %v", err)
+	}
+
+	expectedError := "Chirp is too long"
+	if response.Error != expectedError {
+		t.Errorf("Error = %q, want %q", response.Error, expectedError)
+	}
 }
