@@ -526,3 +526,85 @@ func Test_handleValidateChirp_MissingBodyField_ReturnsValid(t *testing.T) {
 		t.Errorf("Valid = %v, want true (empty string is valid)", response.Valid)
 	}
 }
+
+// Phase 3: Method Restriction Tests for /api/validate_chirp
+
+func Test_handleValidateChirp_GetRequest_Returns405(t *testing.T) {
+	server := httpserver.New()
+
+	// Start server
+	go func() {
+		_ = server.ListenAndServe()
+	}()
+
+	// Give server time to start
+	time.Sleep(100 * time.Millisecond)
+
+	// Make GET request to /api/validate_chirp
+	req, err := http.NewRequest("GET", "http://localhost:8080/api/validate_chirp", nil)
+	if err != nil {
+		t.Fatalf("Failed to create request: %v", err)
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("Expected successful request, got error: %v", err)
+	}
+	defer resp.Body.Close()
+
+	// Verify status code is 405
+	if resp.StatusCode != http.StatusMethodNotAllowed {
+		t.Errorf("Expected status code %d, got %d", http.StatusMethodNotAllowed, resp.StatusCode)
+	}
+
+	// Verify Allow header is set to POST
+	allowHeader := resp.Header.Get("Allow")
+	if allowHeader != "POST" {
+		t.Errorf("Expected Allow header to be 'POST', got '%s'", allowHeader)
+	}
+
+	// Cleanup
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	_ = server.Shutdown(ctx)
+}
+
+func Test_handleValidateChirp_DeleteRequest_Returns405(t *testing.T) {
+	server := httpserver.New()
+
+	// Start server
+	go func() {
+		_ = server.ListenAndServe()
+	}()
+
+	// Give server time to start
+	time.Sleep(100 * time.Millisecond)
+
+	// Make DELETE request to /api/validate_chirp
+	req, err := http.NewRequest("DELETE", "http://localhost:8080/api/validate_chirp", nil)
+	if err != nil {
+		t.Fatalf("Failed to create request: %v", err)
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("Expected successful request, got error: %v", err)
+	}
+	defer resp.Body.Close()
+
+	// Verify status code is 405
+	if resp.StatusCode != http.StatusMethodNotAllowed {
+		t.Errorf("Expected status code %d, got %d", http.StatusMethodNotAllowed, resp.StatusCode)
+	}
+
+	// Verify Allow header is set to POST
+	allowHeader := resp.Header.Get("Allow")
+	if allowHeader != "POST" {
+		t.Errorf("Expected Allow header to be 'POST', got '%s'", allowHeader)
+	}
+
+	// Cleanup
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	_ = server.Shutdown(ctx)
+}
