@@ -440,3 +440,89 @@ func Test_handleValidateChirp_TooLong_Returns400(t *testing.T) {
 		t.Errorf("Error = %q, want %q", response.Error, expectedError)
 	}
 }
+
+// Phase 2: Edge Case Tests
+
+func Test_handleValidateChirp_MalformedJSON_Returns400(t *testing.T) {
+	reqBody := `{invalid json`
+	req := httptest.NewRequest(http.MethodPost, "/api/validate_chirp", strings.NewReader(reqBody))
+	rec := httptest.NewRecorder()
+
+	httpserver.HandleValidateChirp(rec, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Errorf("Status code = %d, want %d", rec.Code, http.StatusBadRequest)
+	}
+
+	contentType := rec.Header().Get("Content-Type")
+	if contentType != "application/json" {
+		t.Errorf("Content-Type = %q, want %q", contentType, "application/json")
+	}
+
+	var response struct {
+		Error string `json:"error"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &response); err != nil {
+		t.Fatalf("Failed to unmarshal error response: %v", err)
+	}
+
+	if response.Error == "" {
+		t.Error("Expected error message in response")
+	}
+}
+
+func Test_handleValidateChirp_EmptyBody_Returns400(t *testing.T) {
+	reqBody := ``
+	req := httptest.NewRequest(http.MethodPost, "/api/validate_chirp", strings.NewReader(reqBody))
+	rec := httptest.NewRecorder()
+
+	httpserver.HandleValidateChirp(rec, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Errorf("Status code = %d, want %d", rec.Code, http.StatusBadRequest)
+	}
+
+	contentType := rec.Header().Get("Content-Type")
+	if contentType != "application/json" {
+		t.Errorf("Content-Type = %q, want %q", contentType, "application/json")
+	}
+
+	var response struct {
+		Error string `json:"error"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &response); err != nil {
+		t.Fatalf("Failed to unmarshal error response: %v", err)
+	}
+
+	if response.Error == "" {
+		t.Error("Expected error message in response")
+	}
+}
+
+func Test_handleValidateChirp_MissingBodyField_ReturnsValid(t *testing.T) {
+	reqBody := `{}`
+	req := httptest.NewRequest(http.MethodPost, "/api/validate_chirp", strings.NewReader(reqBody))
+	rec := httptest.NewRecorder()
+
+	httpserver.HandleValidateChirp(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Errorf("Status code = %d, want %d", rec.Code, http.StatusOK)
+	}
+
+	contentType := rec.Header().Get("Content-Type")
+	if contentType != "application/json" {
+		t.Errorf("Content-Type = %q, want %q", contentType, "application/json")
+	}
+
+	var response struct {
+		Valid bool `json:"valid"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &response); err != nil {
+		t.Fatalf("Failed to unmarshal response: %v", err)
+	}
+
+	if !response.Valid {
+		t.Errorf("Valid = %v, want true (empty string is valid)", response.Valid)
+	}
+}
