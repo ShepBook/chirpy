@@ -118,7 +118,7 @@ func Test_middlewareMetricsInc_ConcurrentRequests(t *testing.T) {
 	}
 }
 
-// Test_handlerMetrics_ReturnsPlainText verifies response has Content-Type: text/plain and HTTP 200
+// Test_handlerMetrics_ReturnsPlainText verifies response has Content-Type: text/html and HTTP 200
 func Test_handlerMetrics_ReturnsPlainText(t *testing.T) {
 	cfg := apiConfig{}
 
@@ -132,12 +132,12 @@ func Test_handlerMetrics_ReturnsPlainText(t *testing.T) {
 	}
 
 	contentType := rec.Header().Get("Content-Type")
-	if contentType != "text/plain" && contentType != "text/plain; charset=utf-8" {
-		t.Errorf("Content-Type = %q, want %q or %q", contentType, "text/plain", "text/plain; charset=utf-8")
+	if contentType != "text/html" {
+		t.Errorf("Content-Type = %q, want %q", contentType, "text/html")
 	}
 }
 
-// Test_handlerMetrics_ReturnsCorrectFormat verifies response format is exactly "Hits: x"
+// Test_handlerMetrics_ReturnsCorrectFormat verifies response format is HTML with proper structure
 func Test_handlerMetrics_ReturnsCorrectFormat(t *testing.T) {
 	cfg := apiConfig{}
 	cfg.fileserverHits.Store(42)
@@ -148,7 +148,12 @@ func Test_handlerMetrics_ReturnsCorrectFormat(t *testing.T) {
 	cfg.handlerMetrics(rec, req)
 
 	got := rec.Body.String()
-	want := "Hits: 42"
+	want := `<html>
+  <body>
+    <h1>Welcome, Chirpy Admin</h1>
+    <p>Chirpy has been visited 42 times!</p>
+  </body>
+</html>`
 	if got != want {
 		t.Errorf("Response body = %q, want %q", got, want)
 	}
@@ -161,10 +166,30 @@ func Test_handlerMetrics_ReflectsActualCount(t *testing.T) {
 		count int32
 		want  string
 	}{
-		{"zero hits", 0, "Hits: 0"},
-		{"one hit", 1, "Hits: 1"},
-		{"multiple hits", 123, "Hits: 123"},
-		{"large number", 99999, "Hits: 99999"},
+		{"zero hits", 0, `<html>
+  <body>
+    <h1>Welcome, Chirpy Admin</h1>
+    <p>Chirpy has been visited 0 times!</p>
+  </body>
+</html>`},
+		{"one hit", 1, `<html>
+  <body>
+    <h1>Welcome, Chirpy Admin</h1>
+    <p>Chirpy has been visited 1 times!</p>
+  </body>
+</html>`},
+		{"multiple hits", 123, `<html>
+  <body>
+    <h1>Welcome, Chirpy Admin</h1>
+    <p>Chirpy has been visited 123 times!</p>
+  </body>
+</html>`},
+		{"large number", 99999, `<html>
+  <body>
+    <h1>Welcome, Chirpy Admin</h1>
+    <p>Chirpy has been visited 99999 times!</p>
+  </body>
+</html>`},
 	}
 
 	for _, tc := range testCases {
@@ -248,7 +273,12 @@ func Test_Integration_MetricsWorkflow(t *testing.T) {
 	cfg.handlerMetrics(metricsRec, metricsReq)
 
 	metricsBody := metricsRec.Body.String()
-	wantMetrics := "Hits: 3"
+	wantMetrics := `<html>
+  <body>
+    <h1>Welcome, Chirpy Admin</h1>
+    <p>Chirpy has been visited 3 times!</p>
+  </body>
+</html>`
 	if metricsBody != wantMetrics {
 		t.Errorf("Metrics before reset = %q, want %q", metricsBody, wantMetrics)
 	}
@@ -268,7 +298,12 @@ func Test_Integration_MetricsWorkflow(t *testing.T) {
 	cfg.handlerMetrics(metricsRec2, metricsReq2)
 
 	metricsBody2 := metricsRec2.Body.String()
-	wantMetricsAfterReset := "Hits: 0"
+	wantMetricsAfterReset := `<html>
+  <body>
+    <h1>Welcome, Chirpy Admin</h1>
+    <p>Chirpy has been visited 0 times!</p>
+  </body>
+</html>`
 	if metricsBody2 != wantMetricsAfterReset {
 		t.Errorf("Metrics after reset = %q, want %q", metricsBody2, wantMetricsAfterReset)
 	}
@@ -378,7 +413,17 @@ func Test_handlerMetrics_GetRequest_Returns200(t *testing.T) {
 		t.Errorf("Status code = %d, want %d", rec.Code, http.StatusOK)
 	}
 
-	expectedBody := "Hits: 5"
+	contentType := rec.Header().Get("Content-Type")
+	if contentType != "text/html" {
+		t.Errorf("Content-Type = %q, want %q", contentType, "text/html")
+	}
+
+	expectedBody := `<html>
+  <body>
+    <h1>Welcome, Chirpy Admin</h1>
+    <p>Chirpy has been visited 5 times!</p>
+  </body>
+</html>`
 	if rec.Body.String() != expectedBody {
 		t.Errorf("Response body = %q, want %q", rec.Body.String(), expectedBody)
 	}
